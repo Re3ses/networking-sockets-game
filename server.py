@@ -4,7 +4,7 @@ import sys
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-server = '192.168.1.6'
+server = '192.168.4.45'
 port = 5555
 
 server_ip = socket.gethostbyname(server)
@@ -19,14 +19,15 @@ s.listen(2)
 print("Waiting for a connection")
 
 currentId = "0"
-pos = ["0:0,0", "1:0,300"]
+# "id, readyState : x, y"
+pos = ["0,0-100:0,0", "1,0-100:0,300"]
 def threaded_client(conn):
     global currentId, pos
     conn.send(str.encode(currentId))
     currentId = "1"
     reply = ''
     while True:
-        print("pos: " + str(pos), "current id: " + currentId)
+        print(pos)
         try:
             data = conn.recv(2048)
             reply = data.decode('utf-8')
@@ -35,7 +36,7 @@ def threaded_client(conn):
                 break
             else:
                 print("Recieved: " + reply)
-                arr = reply.split(":")
+                arr = reply.split(":").split(":").split("-")[0]
                 id = int(arr[0])
                 pos[id] = reply
 
@@ -52,8 +53,6 @@ def threaded_client(conn):
     print("Connection Closed")
     conn.close()
 
-def generate_obstacle():
-    return
 
 while True:
     conn, addr = s.accept()

@@ -1,11 +1,17 @@
-from _thread import start_new_thread
-import time
+import subprocess
 
-def print_numbers(number):
-    for i in range(number):
-        print(i)
+def run_game():
+    try:
+        input()
+        subprocess.run(['python', 'C:\Users\Asus\Desktop\networkingFinalProject\Network-Game-Tutorial-master_original\server.py'], check=True)
+        input()
+        subprocess.run(['python', 'C:\Users\Asus\Desktop\networkingFinalProject\Network-Game-Tutorial-master_original\game.py'], check=True)
+        input()
+        subprocess.run(['python', 'C:\Users\Asus\Desktop\networkingFinalProject\Network-Game-Tutorial-master_original\game.py'], check=True)
+        input()
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while running the game: {e}")
+        input()
 
-start_new_thread(print_numbers, (10,))
-
-# Add a delay to give the new thread time to execute
-time.sleep(5)
+if __name__ == '__main__':
+    run_game()
