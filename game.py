@@ -8,9 +8,10 @@ from network import Network
 class Player():
     width = height = 40
 
-    def __init__(self, startx, starty, color=(0,0,255), id=0):
+    def __init__(self, startx=10, starty=10, color=(0,0,255), id=0):
+        self.id = id
         self.x = startx
-        self.y = starty
+        self.y = starty if id == 0 else 300 + 10
         self.velocity = 2
         self.color = color if id == 0 else (255,0,0)
 
@@ -56,27 +57,31 @@ class Game:
         self.width = w
         self.height = h
         if (int(self.net.id) == 0):
-            self.player = Player(0, 0, id=self.playerId) # Player 1 is blue
-            self.player2 = Player(0, 300, id=1-self.playerId) # Player 2 is red
+            self.player = Player(id=self.playerId) # Player 1 is blue
+            self.player2 = Player(id=1-self.playerId) # Player 2 is red
         else:
-            self.player = Player(0, 300, id=self.playerId) # Player 1 is blue
-            self.player2 = Player(0, 0, id=1-self.playerId) # Player 2 is red 
+            self.player = Player(id=self.playerId) # Player 1 is blue
+            self.player2 = Player(id=1-self.playerId) # Player 2 is red 
         
         self.obstacles = []
         for i in range(self.obstacleCount):
+            random.seed(i)
             y = random.randint(100, self.height)
             # print("rand y: " + y)
-            self.obstacles.append(Obstacle(400, y))
+            self.obstacles.append(Obstacle(700, y))
 
         self.canvas = Canvas(self.width, self.height, "You are " + ("blue" if self.playerId == 0 else "red") )
 
-    def start(self, run=True):
+    def start_screen(self):
         buttonW, buttonH = 100, 50
+        run = True
 
         clock = pygame.time.Clock()
         while run:
+            print("running start_screen()")
             clock.tick(60)
-            
+            print("player ready: " + str(self.playerReady) + " opponent ready: " + str(self.opponentReady))
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -109,48 +114,63 @@ class Game:
                 self.canvas.draw_background((200, 200, 200))
                 # display waiting for opponent
                 self.canvas.draw_text("waiting for opponent...", 20, self.width/2 - 100, self.height/2)
-                
+                                
             # send network stuff
-            self.opponentReady, x, y = self.parse_data(self.send_data()) 
+            self.opponentReady, x, y = self.parse_data(self.send_data(), self.playerId) 
 
             if self.opponentReady == 1 and self.playerReady == 1:
+                print("both ready")
                 run = False
-                self.run()
 
             # update canvas  
             self.canvas.update()
+        print("returning to run()")
+        return
+
 
     def run(self):
         clock = pygame.time.Clock()
-        run = True
-        
-        while run:
+        start = False
+
+        if not start:
+            self.start_screen()
+            start = True
+
+        while start:
+            print("running run()")
             clock.tick(60)
             print(len(self.obstacles))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    run = False
+                    start = False
 
                 if event.type == pygame.K_ESCAPE:
-                    run = False
+                    start = False
 
             keys = pygame.key.get_pressed()
 
 
             if keys[pygame.K_UP]:
                 if self.player.y >= self.player.velocity:
-                    self.player.move(0)
+                    if self.playerId == 0 and self.player.y >= 10 + self.player.velocity:
+                        self.player.move(0)
+                    elif self.playerId == 1 and self.player.y >= 300 + 10 + self.player.velocity:
+                        self.player.move(0)
 
             if keys[pygame.K_DOWN]:
-                if self.player.y <= self.height - self.player.velocity:
-                    self.player.move(1)
+                if self.player.y <= (self.height - 40) - self.player.velocity:
+                    if self.playerId == 0 and self.player.y <= 300 - 40 - 10 - self.player.velocity:
+                        self.player.move(1)
+                    elif self.playerId == 1 and self.player.y <= 600 - 40 - 10 - self.player.velocity:
+                        self.player.move(1)
 
             # Send Network Stuff
-            self.opponentReady, self.player2.x, self.player2.y = self.parse_data(self.send_data())
+            self.opponentReady, self.player2.x, self.player2.y = self.parse_data(self.send_data(), self.playerId)
 
-           
             # Update Canvas
             self.canvas.draw_background()
+            # Draw line
+            self.canvas.draw_line()
 
             # Move obstacles
             for obstacle in self.obstacles:
@@ -163,7 +183,6 @@ class Game:
             self.player.draw(self.canvas.get_canvas())
             self.player2.draw(self.canvas.get_canvas())
             self.canvas.update()
-
         pygame.quit()
 
     def send_data(self):
@@ -176,17 +195,17 @@ class Game:
         return reply
 
     @staticmethod
-    def parse_data(data):
-        try:
+    def parse_data(data, id):
+        if data:
             pos = data.split(":")[1].split(",")
-            r = data.split(":")[0].split(",")
-            return int(r, pos[0]), int(pos[1])
-        except:
-            return 0,0,0
+            ready = data.split(":")[0].split(",")[1].split("-")
+            return int(ready[0]), int(pos[0]), int(pos[1])
+        else:   
+            print("failed to parse data")
+            return 0,0,0 
 
 
 class Canvas:
-
     def __init__(self, w, h, name="None"):
         self.width = w
         self.height = h
@@ -196,6 +215,9 @@ class Canvas:
     @staticmethod
     def update():
         pygame.display.update()
+
+    def draw_line(self, color=(0,0,0), start=(0, 300), end=(600, 300), width=3):
+        pygame.draw.line(self.screen, color, start, end, width)
 
     def draw_text(self, text, size, x, y):
         pygame.font.init()
