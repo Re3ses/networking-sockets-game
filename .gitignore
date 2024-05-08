@@ -12,5 +12,5 @@ venv/
 .idea/
 .vscode/
 
-./test.py
-./runall.bat
+test.py
+runall.bat
