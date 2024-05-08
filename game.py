@@ -1,3 +1,4 @@
+import math
 import random
 import pygame
 pygame.init()
@@ -23,7 +24,6 @@ class Player():
         :param dirn: 0 or 1 (up, down)
         :return: None
         """
-
         if dirn == 0:
             self.y -= self.velocity
         else:
@@ -32,24 +32,37 @@ class Player():
 class Obstacle():
     width = height = 20
 
-    def __init__(self, startx, starty, color=(0,0,0)):
-        self.x = startx
+    def __init__(self, startx, starty, distance_to_next=700, color=(0,0,0)):
+        self.x = startx + distance_to_next
         self.y = starty
-        self.velocity = 5
+        self.velocity = 2
         self.color = color
 
-    def draw(self, g):
-        pygame.draw.rect(g, self.color ,(self.x, self.y, self.width, self.height), 0)
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color ,(self.x, self.y, self.width, self.height), 0)
 
     def move(self):
+        # start moving to the right
         self.x -= self.velocity
+
+# class ObstacleList():
+
+#     def __init__(self, seed, difficulty=1):
+#         self.obstacles = [] 
+#         for i in range(difficulty):
+#             self.obstacles.append(Obstacle)
+
+#     def draw_obstacles(self, screen):
+#         for obs in self.obstacles:
+#             obs.draw(screen)
+            
 
 
 class Game:
 
     def __init__(self, w, h):
         self.net = Network()
-        self.obstacleCount = 2
+        self.obstacleCount = 5
         self.seed = 0
         self.playerId = int(self.net.id)
         self.playerReady = 0
@@ -66,9 +79,10 @@ class Game:
         self.obstacles = []
         for i in range(self.obstacleCount):
             random.seed(i)
-            y = random.randint(100, self.height)
+            y = random.randint(10, (self.height // 2) - 10 )
+            x = random.randint(10, self.width)
             # print("rand y: " + y)
-            self.obstacles.append(Obstacle(700, y))
+            self.obstacles.append(Obstacle(700, y, x))
 
         self.canvas = Canvas(self.width, self.height, "You are " + ("blue" if self.playerId == 0 else "red") )
 
@@ -154,12 +168,12 @@ class Game:
                 if self.player.y >= self.player.velocity:
                     if self.playerId == 0 and self.player.y >= 10 + self.player.velocity:
                         self.player.move(0)
-                    elif self.playerId == 1 and self.player.y >= 300 + 10 + self.player.velocity:
+                    elif self.playerId == 1 and self.player.y >= self.height//2 + 10 + self.player.velocity:
                         self.player.move(0)
 
             if keys[pygame.K_DOWN]:
                 if self.player.y <= (self.height - 40) - self.player.velocity:
-                    if self.playerId == 0 and self.player.y <= 300 - 40 - 10 - self.player.velocity:
+                    if self.playerId == 0 and self.player.y <= self.height//2 - 40 - 10 - self.player.velocity:
                         self.player.move(1)
                     elif self.playerId == 1 and self.player.y <= 600 - 40 - 10 - self.player.velocity:
                         self.player.move(1)
@@ -172,13 +186,11 @@ class Game:
             # Draw line
             self.canvas.draw_line()
 
-            # Move obstacles
-            for obstacle in self.obstacles:
-                obstacle.move()
-
-            # Draw obstacles
-            for obstacle in self.obstacles:
-                obstacle.draw(self.canvas.get_canvas())
+            for i in range(self.obstacleCount):
+                # draw
+                self.obstacles[i].draw(self.canvas.get_canvas())
+                # move
+                self.obstacles[i].move()
 
             self.player.draw(self.canvas.get_canvas())
             self.player2.draw(self.canvas.get_canvas())

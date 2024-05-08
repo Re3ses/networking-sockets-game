@@ -1,10 +1,11 @@
 import socket
 from _thread import *
+import random
 import sys
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-server = '192.168.1.7'
+server = '192.168.56.1'
 port = 5555
 
 server_ip = socket.gethostbyname(server)
@@ -19,9 +20,9 @@ s.listen(2)
 print("Waiting for a connection")
 
 currentId = "0"
-# "id, readyState : x, y"
+# "id, readyState-distance,   : x, y"
 # initial values
-pos = ["0,0-100:10,10", "1,0-100:10,10"]
+pos = ["0,0-0:10,10", "1,0-:10,10"]
 def threaded_client(conn):
     global currentId, pos
     conn.send(str.encode(currentId))
