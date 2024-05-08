@@ -32,12 +32,15 @@ class Player():
 class Obstacle():
     width = height = 20
 
-    def __init__(self, startx, starty, distance_to_next=700, color=(0,0,0)):
+    def __init__(self, startx=700, starty=0, distance_to_next=700, color=(0,0,0)):
         self.x = startx + distance_to_next
         self.y = starty
         self.velocity = 2
         self.color = color
 
+    def get_pos(self):
+        return self.x, self.y
+    
     def draw(self, surface):
         pygame.draw.rect(surface, self.color ,(self.x, self.y, self.width, self.height), 0)
 
@@ -47,19 +50,25 @@ class Obstacle():
 
 class ObstacleList():
 
-    def __init__(self, obstacle_count, surface, w, h):
+    def __init__(self, surface, w, h):
         self.width = w
         self.height = h
         self.surface = surface
         self.obstacles = []
-        self.obstacle_count = obstacle_count
+        self.generate_obstacle()
+    
+    def get_obstacles(self):
+        return self.obstacles
 
-        for i in range(obstacle_count):
-            random.seed(i)
-            y = random.randint(10, (self.height // 2) - 10 )
-            x = random.randint(10, self.width)
-            # print("rand y: " + y)
-            self.obstacles.append(Obstacle(700, y, x))
+    def generate_obstacle(self):
+        y = random.randint(10, ((self.height // 2) - 20) )
+        # distance_to_next_obs = random.randint(self.width, self.width)
+        # print("rand y: " + y)
+        self.obstacles.append(Obstacle(starty=y))
+    
+    def delete_out_of_bounds(self):
+        if self.obstacles[0].get_pos()[0] < 0 - 20:
+            self.obstacles = self.obstacles[1:]
 
     def animate_obstacles(self):
         for obs in self.obstacles:
@@ -68,7 +77,6 @@ class ObstacleList():
             # move
             obs.move()
             
-
 
 class Game:
 
@@ -89,7 +97,7 @@ class Game:
             self.player2 = Player(id=1-self.playerId) # Player 2 is red 
         
         self.canvas = Canvas(self.width, self.height, "You are " + ("blue" if self.playerId == 0 else "red") )
-        self.obstacles = ObstacleList(self.obstacleCount, self.canvas.get_canvas(), self.width, self.height)
+        self.obstacles = ObstacleList(self.canvas.get_canvas(), self.width, self.height)
 
     def start_screen(self):
         buttonW, buttonH = 100, 50
@@ -184,7 +192,8 @@ class Game:
             self.opponentReady, self.player2.x, self.player2.y = self.parse_data(self.send_data(), self.playerId)
 
             # generate obstacles
-            self.obstacles = ObstacleList(self.obstacleCount, self.canvas.get_canvas(), self.width, self.height)
+            if self.obstacles.get_obstacles()[-1].get_pos()[0] < 300:
+                self.obstacles.generate_obstacle()
             
             # Update Canvas
             self.canvas.draw_background()
@@ -194,6 +203,9 @@ class Game:
             # move obstacles
             self.obstacles.animate_obstacles()
 
+            # check if first obstacle is out of bounds
+            self.obstacles.delete_out_of_bounds()
+            
             self.player.draw(self.canvas.get_canvas())
             self.player2.draw(self.canvas.get_canvas())
             self.canvas.update()
