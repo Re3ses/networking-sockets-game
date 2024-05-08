@@ -1,0 +1,16 @@
+__pycache__/
+# Ignore compiled Python files
+*.pyc
+
+# Ignore cache directories
+__pycache__/
+
+# Ignore virtual environment
+venv/
+
+# Ignore IDE specific files
+.idea/
+.vscode/
+
+./test.py
+./runall.bat
