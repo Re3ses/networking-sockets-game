@@ -45,16 +45,28 @@ class Obstacle():
         # start moving to the right
         self.x -= self.velocity
 
-# class ObstacleList():
+class ObstacleList():
 
-#     def __init__(self, seed, difficulty=1):
-#         self.obstacles = [] 
-#         for i in range(difficulty):
-#             self.obstacles.append(Obstacle)
+    def __init__(self, obstacle_count, surface, w, h):
+        self.width = w
+        self.height = h
+        self.surface = surface
+        self.obstacles = []
+        self.obstacle_count = obstacle_count
 
-#     def draw_obstacles(self, screen):
-#         for obs in self.obstacles:
-#             obs.draw(screen)
+        for i in range(obstacle_count):
+            random.seed(i)
+            y = random.randint(10, (self.height // 2) - 10 )
+            x = random.randint(10, self.width)
+            # print("rand y: " + y)
+            self.obstacles.append(Obstacle(700, y, x))
+
+    def animate_obstacles(self):
+        for obs in self.obstacles:
+            # draw 
+            obs.draw(self.surface)
+            # move
+            obs.move()
             
 
 
@@ -76,15 +88,8 @@ class Game:
             self.player = Player(id=self.playerId) # Player 1 is blue
             self.player2 = Player(id=1-self.playerId) # Player 2 is red 
         
-        self.obstacles = []
-        for i in range(self.obstacleCount):
-            random.seed(i)
-            y = random.randint(10, (self.height // 2) - 10 )
-            x = random.randint(10, self.width)
-            # print("rand y: " + y)
-            self.obstacles.append(Obstacle(700, y, x))
-
         self.canvas = Canvas(self.width, self.height, "You are " + ("blue" if self.playerId == 0 else "red") )
+        self.obstacles = ObstacleList(self.obstacleCount, self.canvas.get_canvas(), self.width, self.height)
 
     def start_screen(self):
         buttonW, buttonH = 100, 50
@@ -141,7 +146,6 @@ class Game:
         print("returning to run()")
         return
 
-
     def run(self):
         clock = pygame.time.Clock()
         start = False
@@ -153,7 +157,6 @@ class Game:
         while start:
             print("running run()")
             clock.tick(60)
-            print(len(self.obstacles))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     start = False
@@ -162,7 +165,6 @@ class Game:
                     start = False
 
             keys = pygame.key.get_pressed()
-
 
             if keys[pygame.K_UP]:
                 if self.player.y >= self.player.velocity:
@@ -181,16 +183,16 @@ class Game:
             # Send Network Stuff
             self.opponentReady, self.player2.x, self.player2.y = self.parse_data(self.send_data(), self.playerId)
 
+            # generate obstacles
+            self.obstacles = ObstacleList(self.obstacleCount, self.canvas.get_canvas(), self.width, self.height)
+            
             # Update Canvas
             self.canvas.draw_background()
             # Draw line
             self.canvas.draw_line()
 
-            for i in range(self.obstacleCount):
-                # draw
-                self.obstacles[i].draw(self.canvas.get_canvas())
-                # move
-                self.obstacles[i].move()
+            # move obstacles
+            self.obstacles.animate_obstacles()
 
             self.player.draw(self.canvas.get_canvas())
             self.player2.draw(self.canvas.get_canvas())
