@@ -5,6 +5,7 @@ pygame.init()
 import sys
 from network import Network
 
+random.seed(10)
 
 class Player():
     width = height = 40
@@ -16,8 +17,13 @@ class Player():
         self.velocity = 2
         self.color = color if id == 0 else (255,0,0)
 
-    def draw(self, g):
-        pygame.draw.rect(g, self.color ,(self.x, self.y, self.width, self.height), 0)
+        self.playerRect = pygame.Rect(self.x, self.y, self.width, self.height)
+
+    def get_player_rect(self):
+        return self.playerRect
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color , self.playerRect, 0)
 
     def move(self, dirn):
         """
@@ -32,17 +38,32 @@ class Player():
 class Obstacle():
     width = height = 20
 
-    def __init__(self, startx=700, starty=0, distance_to_next=700, color=(0,0,0)):
+    def __init__(self, startx=600, starty=0, distance_to_next=300, color=(0,0,0)):
         self.x = startx + distance_to_next
         self.y = starty
         self.velocity = 2
         self.color = color
+        self.rect1 = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.rect2 = pygame.Rect(self.x, self.y+300, self.width, self.height)
 
     def get_pos(self):
         return self.x, self.y
     
+    def get_rect1(self):
+        return self.rect1
+    
+    def get_rect2(self):
+        return self.rect2
+    
+    def get_rects(self):
+        return self.rect1, self.rect2
+    
     def draw(self, surface):
-        pygame.draw.rect(surface, self.color ,(self.x, self.y, self.width, self.height), 0)
+        """
+        Draw the obstacle twice on the screen
+        """
+        pygame.draw.rect(surface, self.color , self.rect1)
+        pygame.draw.rect(surface, self.color , self.rect2)
 
     def move(self):
         # start moving to the right
@@ -62,10 +83,14 @@ class ObstacleList():
 
     def generate_obstacle(self):
         y = random.randint(10, ((self.height // 2) - 20) )
-        # distance_to_next_obs = random.randint(self.width, self.width)
-        # print("rand y: " + y)
         self.obstacles.append(Obstacle(starty=y))
     
+    def get_obstacle_rects(self):
+        obstacleRects = []
+        for obs in self.obstacles:
+            obstacleRects.extend(obs.get_rects())
+        return obstacleRects
+
     def delete_out_of_bounds(self):
         if self.obstacles[0].get_pos()[0] < 0 - 20:
             self.obstacles = self.obstacles[1:]
@@ -203,6 +228,11 @@ class Game:
             # move obstacles
             self.obstacles.animate_obstacles()
 
+            # check for collision
+            if self.check_for_collision() == 1:
+                print("Player 1 collided with obstacle")
+                start = False
+
             # check if first obstacle is out of bounds
             self.obstacles.delete_out_of_bounds()
             
@@ -210,6 +240,29 @@ class Game:
             self.player2.draw(self.canvas.get_canvas())
             self.canvas.update()
         pygame.quit()
+        
+    def check_for_collision(self):
+        """
+        Check for collision between players and obstacles.
+        Returns:
+            int: 1 if player 1 collides with an obstacle, 2 if player 2 collides with an obstacle, 0 otherwise.
+        """
+        # Get the obstacle rectangles
+        rects = self.obstacles.get_obstacle_rects()
+        # Get the player rectangles
+        player1Rect = self.player.get_player_rect()
+        player2Rect = self.player2.get_player_rect()
+
+        # Check if player 1 collides with any obstacle
+        if player1Rect.collidelist(rects) > -1:
+            return 1
+        # Check if player 2 collides with any obstacle
+        elif player2Rect.collidelist(rects) > -1:
+            return 2
+        # No collision
+        else:
+            return 0
+
 
     def send_data(self):
         """
