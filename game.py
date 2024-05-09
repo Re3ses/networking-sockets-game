@@ -251,11 +251,16 @@ class Game:
             self.canvas.draw_line()
 
             # move obstacles
-            self.obstacles.animate_obstacles()
+            self.obstacles.animate_obstacles()  
 
             # check for collision
             if self.check_for_collision() == 1:
                 print("Player 1 collided with obstacle")
+                self.lose_screen()
+                start = False
+            if self.check_for_collision() == 2:
+                print("Player 2 collided with obstacle")
+                self.win_screen()
                 start = False
 
             # check if first obstacle is out of bounds
@@ -288,7 +293,6 @@ class Game:
         else:
             return 0
 
-
     def send_game_state(self):
         """
         Send position to server
@@ -307,6 +311,36 @@ class Game:
         else:   
             print("failed to parse data")
             return 0,0,0 
+        
+    def win_screen(self):
+        print("running win_screen()")
+        run = True
+        clock = pygame.time.Clock()
+        while run:
+            clock.tick(60)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+
+            self.canvas.draw_background()
+            self.canvas.draw_text("You Win!", 50, self.width//2 - 50, self.height//2)
+            self.canvas.update()
+        pygame.quit()
+
+    def lose_screen(self):
+        print("running lose_screen()")
+        run = True
+        clock = pygame.time.Clock()
+        while run:
+            clock.tick(60)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+
+            self.canvas.draw_background()
+            self.canvas.draw_text("You Lose!", 50, self.width//2 - 50, self.height//2)
+            self.canvas.update()
+        pygame.quit()
 
 
 class Canvas:
