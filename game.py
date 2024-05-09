@@ -19,11 +19,19 @@ class Player():
 
         self.playerRect = pygame.Rect(self.x, self.y, self.width, self.height)
 
+    def update_pos(self, x, y):
+        self.x = x
+        self.y = y
+        self.update_player_rect()
+
     def get_player_rect(self):
         return self.playerRect
+    
+    def update_player_rect(self):
+        self.playerRect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def draw(self, surface):
-        pygame.draw.rect(surface, self.color , self.playerRect, 0)
+        pygame.draw.rect(surface, self.color , self.playerRect)
 
     def move(self, dirn):
         """
@@ -34,6 +42,8 @@ class Player():
             self.y -= self.velocity
         else:
             self.y += self.velocity
+
+        self.update_player_rect()
 
 class Obstacle():
     width = height = 20
@@ -58,6 +68,15 @@ class Obstacle():
     def get_rects(self):
         return self.rect1, self.rect2
     
+    def update_pos(self, x, y):
+        self.x = x
+        self.y = y
+        self.update_rects()
+
+    def update_rects(self):
+        self.rect1 = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.rect2 = pygame.Rect(self.x, self.y+300, self.width, self.height)
+    
     def draw(self, surface):
         """
         Draw the obstacle twice on the screen
@@ -68,6 +87,7 @@ class Obstacle():
     def move(self):
         # start moving to the right
         self.x -= self.velocity
+        self.update_rects()
 
 class ObstacleList():
 
@@ -125,14 +145,14 @@ class Game:
         self.obstacles = ObstacleList(self.canvas.get_canvas(), self.width, self.height)
 
     def start_screen(self):
+        print("running start_screen()")
         buttonW, buttonH = 100, 50
         run = True
 
         clock = pygame.time.Clock()
+        print("player ready: " + str(self.playerReady) + " opponent ready: " + str(self.opponentReady))
         while run:
-            print("running start_screen()")
             clock.tick(60)
-            print("player ready: " + str(self.playerReady) + " opponent ready: " + str(self.opponentReady))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -162,13 +182,14 @@ class Game:
                     pygame.draw.rect(self.canvas.get_canvas(), (100, 100, 100), [self.width/2, self.height/2, buttonW, buttonH], 0) 
                 self.canvas.draw_text("start", 35, self.width/2 + 10, self.height/2)
             else:
+                print("player ready")
                 # remove button and darken background
                 self.canvas.draw_background((200, 200, 200))
                 # display waiting for opponent
                 self.canvas.draw_text("waiting for opponent...", 20, self.width/2 - 100, self.height/2)
                                 
             # send network stuff
-            self.opponentReady, x, y = self.parse_data(self.send_data(), self.playerId) 
+            self.opponentReady, x, y = self.parse_game_state(self.send_game_state(), self.playerId) 
 
             if self.opponentReady == 1 and self.playerReady == 1:
                 print("both ready")
@@ -180,6 +201,7 @@ class Game:
         return
 
     def run(self):
+        print("running run()")
         clock = pygame.time.Clock()
         start = False
 
@@ -188,7 +210,6 @@ class Game:
             start = True
 
         while start:
-            print("running run()")
             clock.tick(60)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -200,6 +221,7 @@ class Game:
             keys = pygame.key.get_pressed()
 
             if keys[pygame.K_UP]:
+                print("pressed up")
                 if self.player.y >= self.player.velocity:
                     if self.playerId == 0 and self.player.y >= 10 + self.player.velocity:
                         self.player.move(0)
@@ -207,14 +229,17 @@ class Game:
                         self.player.move(0)
 
             if keys[pygame.K_DOWN]:
+                print("pressed down")
                 if self.player.y <= (self.height - 40) - self.player.velocity:
                     if self.playerId == 0 and self.player.y <= self.height//2 - 40 - 10 - self.player.velocity:
                         self.player.move(1)
                     elif self.playerId == 1 and self.player.y <= 600 - 40 - 10 - self.player.velocity:
                         self.player.move(1)
 
+            tempx = tempy = 0
             # Send Network Stuff
-            self.opponentReady, self.player2.x, self.player2.y = self.parse_data(self.send_data(), self.playerId)
+            self.opponentReady, tempx, tempy = self.parse_game_state(self.send_game_state(), self.playerId)
+            self.player2.update_pos(tempx, tempy)
 
             # generate obstacles
             if self.obstacles.get_obstacles()[-1].get_pos()[0] < 300:
@@ -264,7 +289,7 @@ class Game:
             return 0
 
 
-    def send_data(self):
+    def send_game_state(self):
         """
         Send position to server
         :return: None
@@ -274,7 +299,7 @@ class Game:
         return reply
 
     @staticmethod
-    def parse_data(data, id):
+    def parse_game_state(data, id):
         if data:
             pos = data.split(":")[1].split(",")
             ready = data.split(":")[0].split(",")[1].split("-")

@@ -28,11 +28,12 @@ def threaded_client(conn):
     conn.send(str.encode(currentId))
     currentId = "1"
     reply = ''
-    while True:
+    gameStart = True
+    while gameStart:
         print(pos)
         try:
             data = conn.recv(2048)
-            reply = data.decode('utf-8')
+            reply = data.decode()
             if not data:
                 conn.send(str.encode("Goodbye"))
                 break
