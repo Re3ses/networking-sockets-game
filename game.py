@@ -4,124 +4,10 @@ import pygame
 pygame.init()
 import sys
 from network import Network
+from player import Player
+from obstacles import ObstacleList
 
-random.seed(10)
-
-class Player():
-    width = height = 40
-
-    def __init__(self, startx=10, starty=10, color=(0,0,255), id=0):
-        self.id = id
-        self.x = startx
-        self.y = starty if id == 0 else 300 + 10
-        self.velocity = 2
-        self.color = color if id == 0 else (255,0,0)
-
-        self.playerRect = pygame.Rect(self.x, self.y, self.width, self.height)
-
-    def update_pos(self, x, y):
-        self.x = x
-        self.y = y
-        self.update_player_rect()
-
-    def get_player_rect(self):
-        return self.playerRect
-    
-    def update_player_rect(self):
-        self.playerRect = pygame.Rect(self.x, self.y, self.width, self.height)
-
-    def draw(self, surface):
-        pygame.draw.rect(surface, self.color , self.playerRect)
-
-    def move(self, dirn):
-        """
-        :param dirn: 0 or 1 (up, down)
-        :return: None
-        """
-        if dirn == 0:
-            self.y -= self.velocity
-        else:
-            self.y += self.velocity
-
-        self.update_player_rect()
-
-class Obstacle():
-    width = height = 20
-
-    def __init__(self, startx=600, starty=0, distance_to_next=300, color=(0,0,0)):
-        self.x = startx + distance_to_next
-        self.y = starty
-        self.velocity = 2
-        self.color = color
-        self.rect1 = pygame.Rect(self.x, self.y, self.width, self.height)
-        self.rect2 = pygame.Rect(self.x, self.y+300, self.width, self.height)
-
-    def get_pos(self):
-        return self.x, self.y
-    
-    def get_rect1(self):
-        return self.rect1
-    
-    def get_rect2(self):
-        return self.rect2
-    
-    def get_rects(self):
-        return self.rect1, self.rect2
-    
-    def update_pos(self, x, y):
-        self.x = x
-        self.y = y
-        self.update_rects()
-
-    def update_rects(self):
-        self.rect1 = pygame.Rect(self.x, self.y, self.width, self.height)
-        self.rect2 = pygame.Rect(self.x, self.y+300, self.width, self.height)
-    
-    def draw(self, surface):
-        """
-        Draw the obstacle twice on the screen
-        """
-        pygame.draw.rect(surface, self.color , self.rect1)
-        pygame.draw.rect(surface, self.color , self.rect2)
-
-    def move(self):
-        # start moving to the right
-        self.x -= self.velocity
-        self.update_rects()
-
-class ObstacleList():
-
-    def __init__(self, surface, w, h):
-        self.width = w
-        self.height = h
-        self.surface = surface
-        self.obstacles = []
-        self.generate_obstacle()
-    
-    def get_obstacles(self):
-        return self.obstacles
-
-    def generate_obstacle(self):
-        y = random.randint(10, ((self.height // 2) - 20) )
-        self.obstacles.append(Obstacle(starty=y))
-    
-    def get_obstacle_rects(self):
-        obstacleRects = []
-        for obs in self.obstacles:
-            obstacleRects.extend(obs.get_rects())
-        return obstacleRects
-
-    def delete_out_of_bounds(self):
-        if self.obstacles[0].get_pos()[0] < 0 - 20:
-            self.obstacles = self.obstacles[1:]
-
-    def animate_obstacles(self):
-        for obs in self.obstacles:
-            # draw 
-            obs.draw(self.surface)
-            # move
-            obs.move()
-            
+random.seed(10)      
 
 class Game:
 
@@ -256,13 +142,12 @@ class Game:
 
             # check for collision
             if self.check_for_collision() == 1:
-                print("Player 1 collided with obstacle")
-                self.lose_screen()
-                start = False
-            if self.check_for_collision() == 2:
-                print("Player 2 collided with obstacle")
-                self.win_screen()
-                start = False
+                print("You collided with obstacle")
+                # tell opponennt we lost
+                self.game_winner = 2
+                break
+
+            self.check_for_winner()
 
             # check if first obstacle is out of bounds
             self.obstacles.delete_out_of_bounds()
@@ -312,6 +197,14 @@ class Game:
         else:   
             print("failed to parse data")
             return 0,0,0 
+        
+    def check_for_winner(self):
+        if self.game_winner:
+            if self.game_winner == 1:
+                print("You win!")
+                self.win_screen()
+        else:
+            print("No winner yet")
         
     def win_screen(self):
         print("running win_screen()")
