@@ -130,16 +130,17 @@ class Game:
         self.obstacleCount = 5
         self.seed = 0
         self.playerId = int(self.net.id)
-        self.playerReady = 0
+        self.selfReady = 0
         self.opponentReady = 0
+        self.game_winner = None
         self.width = w
         self.height = h
         if (int(self.net.id) == 0):
             self.player = Player(id=self.playerId) # Player 1 is blue
-            self.player2 = Player(id=1-self.playerId) # Player 2 is red
+            self.opponent = Player(id=1-self.playerId) # Player 2 is red
         else:
             self.player = Player(id=self.playerId) # Player 1 is blue
-            self.player2 = Player(id=1-self.playerId) # Player 2 is red 
+            self.opponent = Player(id=1-self.playerId) # Player 2 is red 
         
         self.canvas = Canvas(self.width, self.height, "You are " + ("blue" if self.playerId == 0 else "red") )
         self.obstacles = ObstacleList(self.canvas.get_canvas(), self.width, self.height)
@@ -150,7 +151,7 @@ class Game:
         run = True
 
         clock = pygame.time.Clock()
-        print("player ready: " + str(self.playerReady) + " opponent ready: " + str(self.opponentReady))
+        print("player ready: " + str(self.selfReady) + " opponent ready: " + str(self.opponentReady))
         while run:
             clock.tick(60)
 
@@ -161,8 +162,8 @@ class Game:
                 # check if button is pressed    
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if self.width/2 <= mouse[0] <= self.width/2+buttonW and self.height/2 <= mouse[1] <= self.height/2+buttonH: 
-                        self.playerReady = 1
-                        print(self.playerReady)
+                        self.selfReady = 1
+                        print(self.selfReady)
                         
             # get mouse position
             mouse = pygame.mouse.get_pos()
@@ -174,7 +175,7 @@ class Game:
             self.canvas.draw_text(str(mouse), 10, 0, 0)
 
             # check if player is ready
-            if self.playerReady == 0:
+            if self.selfReady == 0:
                 # check if player is hovering on the button, if so change color
                 if self.width/2 <= mouse[0] <= self.width/2+buttonW and self.height/2 <= mouse[1] <= self.height/2+buttonH: 
                     pygame.draw.rect(self.canvas.get_canvas(), (170, 170, 170), [self.width/2, self.height/2, buttonW, buttonH], 0) 
@@ -191,7 +192,7 @@ class Game:
             # send network stuff
             self.opponentReady, x, y = self.parse_game_state(self.send_game_state(), self.playerId) 
 
-            if self.opponentReady == 1 and self.playerReady == 1:
+            if self.opponentReady == 1 and self.selfReady == 1:
                 print("both ready")
                 run = False
 
@@ -239,7 +240,7 @@ class Game:
             tempx = tempy = 0
             # Send Network Stuff
             self.opponentReady, tempx, tempy = self.parse_game_state(self.send_game_state(), self.playerId)
-            self.player2.update_pos(tempx, tempy)
+            self.opponent.update_pos(tempx, tempy)
 
             # generate obstacles
             if self.obstacles.get_obstacles()[-1].get_pos()[0] < 300:
@@ -267,7 +268,7 @@ class Game:
             self.obstacles.delete_out_of_bounds()
             
             self.player.draw(self.canvas.get_canvas())
-            self.player2.draw(self.canvas.get_canvas())
+            self.opponent.draw(self.canvas.get_canvas())
             self.canvas.update()
         pygame.quit()
         
@@ -280,14 +281,14 @@ class Game:
         # Get the obstacle rectangles
         rects = self.obstacles.get_obstacle_rects()
         # Get the player rectangles
-        player1Rect = self.player.get_player_rect()
-        player2Rect = self.player2.get_player_rect()
+        selfRect = self.player.get_player_rect()
+        opponentRect = self.opponent.get_player_rect()
 
         # Check if player 1 collides with any obstacle
-        if player1Rect.collidelist(rects) > -1:
+        if selfRect.collidelist(rects) > -1:
             return 1
         # Check if player 2 collides with any obstacle
-        elif player2Rect.collidelist(rects) > -1:
+        elif opponentRect.collidelist(rects) > -1:
             return 2
         # No collision
         else:
@@ -298,7 +299,7 @@ class Game:
         Send position to server
         :return: None
         """
-        data = str(self.net.id) + "," + str(self.playerReady) + "-" + str(self.seed) + ":" + str(self.player.x) + "," + str(self.player.y)
+        data = str(self.net.id) + "," + str(self.selfReady) + "-" + str(self.seed) + ":" + str(self.player.x) + "," + str(self.player.y)
         reply = self.net.send(data)
         return reply
 
