@@ -147,8 +147,6 @@ class Game:
                 self.game_winner = 2
                 break
 
-            self.check_for_winner()
-
             # check if first obstacle is out of bounds
             self.obstacles.delete_out_of_bounds()
             
