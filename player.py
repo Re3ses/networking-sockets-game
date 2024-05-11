@@ -26,6 +26,9 @@ class Player():
     def draw(self, surface):
         pygame.draw.rect(surface, self.color , self.playerRect)
 
+    def increase_vel(self):
+        self.velocity += .5
+
     def move(self, dirn):
         """
         :param dirn: 0 or 1 (up, down)

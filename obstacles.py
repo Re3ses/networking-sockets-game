@@ -40,6 +40,9 @@ class Obstacle():
         pygame.draw.rect(surface, self.color , self.rect1)
         pygame.draw.rect(surface, self.color , self.rect2)
 
+    def increase_vel(self):
+        self.velocity += .5
+
     def move(self):
         # start moving to the right
         self.x -= self.velocity
@@ -57,6 +60,10 @@ class ObstacleList():
     def get_obstacles(self):
         return self.obstacles
 
+    def get_obstacles_count(self):
+        return len(self.obstacles)
+
+
     def generate_obstacle(self):
         y = random.randint(10, ((self.height // 2) - 20) )
         self.obstacles.append(Obstacle(starty=y))
@@ -70,6 +77,10 @@ class ObstacleList():
     def delete_out_of_bounds(self):
         if self.obstacles[0].get_pos()[0] < 0 - 20:
             self.obstacles = self.obstacles[1:]
+
+    def increase_obstacles_vel(self):
+        for obs in self.obstacles:
+            obs.increase_vel()
 
     def animate_obstacles(self):
         for obs in self.obstacles:

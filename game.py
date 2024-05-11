@@ -12,7 +12,6 @@ class Game:
 
     def __init__(self, w, h):
         self.net = Network()
-        self.obstacleCount = 5
         self.seed = 0
         self.playerId = int(self.net.id)
         self.selfReady = 0
@@ -128,7 +127,14 @@ class Game:
             # generate obstacles
             if self.obstacles.get_obstacles()[-1].get_pos()[0] < 300:
                 self.obstacles.generate_obstacle()
+
+            # increase velocity of obstacles and players
+            if self.obstacles.get_obstacles_count() % 5 == 0:
+                self.obstacles.increase_obstacles_vel() 
+                self.player.increase_vel()
+                self.opponent.increase_vel()
             
+
             # Update Canvas
             self.canvas.draw_background()
             # Draw line
