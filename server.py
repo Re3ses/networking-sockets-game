@@ -22,7 +22,7 @@ print("Waiting for a connection")
 currentId = "0"
 # "id, readyState-distance,   : x, y"
 # initial values
-pos = ["0,0-0:10,10", "0,0-:10,10"]
+pos = ["0,0:10,10", "0,0:10,10"]
 def threaded_client(conn):
     global currentId, pos
     conn.send(str.encode(currentId))

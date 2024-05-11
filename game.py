@@ -76,7 +76,7 @@ class Game:
                 self.canvas.draw_text("waiting for opponent...", 20, self.width/2 - 100, self.height/2)
                                 
             # send network stuff
-            self.opponentReady, x, y = self.parse_game_state(self.send_game_state(), self.playerId) 
+            self.opponentReady, x, y = self.parse_game_state(self.send_game_state()) 
 
             if self.opponentReady == 1 and self.selfReady == 1:
                 print("both ready")
@@ -125,7 +125,7 @@ class Game:
 
             tempx = tempy = 0
             # Send Network Stuff
-            self.opponentReady, tempx, tempy = self.parse_game_state(self.send_game_state(), self.playerId)
+            self.opponentReady, tempx, tempy = self.parse_game_state(self.send_game_state())
             self.opponent.update_pos(tempx, tempy)
 
             # generate obstacles
@@ -184,27 +184,19 @@ class Game:
         Send position to server
         :return: None
         """
-        data = str(self.net.id) + "," + str(self.selfReady) + "-" + str(self.seed) + ":" + str(self.player.x) + "," + str(self.player.y)
+        data = str(self.net.id) + "," + str(self.selfReady) + ":" + str(self.player.x) + "," + str(self.player.y)
         reply = self.net.send(data)
         return reply
 
     @staticmethod
-    def parse_game_state(data, id):
+    def parse_game_state(data):
         if data:
             pos = data.split(":")[1].split(",")
-            ready = data.split(":")[0].split(",")[1].split("-")
-            return int(ready[0]), int(pos[0]), int(pos[1])
+            ready = data.split(":")[0].split(",")[1]
+            return int(ready), int(pos[0]), int(pos[1])
         else:   
             print("failed to parse data")
             return 0,0,0 
-        
-    def check_for_winner(self):
-        if self.game_winner:
-            if self.game_winner == 1:
-                print("You win!")
-                self.win_screen()
-        else:
-            print("No winner yet")
         
     def win_screen(self):
         print("running win_screen()")
