@@ -133,7 +133,6 @@ class Game:
                 self.obstacles.increase_obstacles_vel() 
                 self.player.increase_vel()
                 self.opponent.increase_vel()
-            
 
             # Update Canvas
             self.canvas.draw_background()
