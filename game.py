@@ -1,8 +1,6 @@
-import math
 import random
 import pygame
 pygame.init()
-import sys
 from network import Network
 from player import Player
 from obstacles import ObstacleList
