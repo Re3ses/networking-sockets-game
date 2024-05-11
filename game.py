@@ -18,7 +18,8 @@ class Game:
         self.playerId = int(self.net.id)
         self.selfReady = 0
         self.opponentReady = 0
-        self.opponentWon = 0
+        self.player1Lost = 0
+        self.player2Lost = 0
         self.width = w
         self.height = h
         if (int(self.net.id) == 0):
@@ -76,7 +77,7 @@ class Game:
                 self.canvas.draw_text("waiting for opponent...", 20, self.width/2 - 100, self.height/2)
                                 
             # send network stuff
-            self.opponentReady, self.opponentWon, x, y = self.parse_game_state(self.send_game_state()) 
+            self.opponentReady, self.player2Lost, x, y = self.parse_game_state(self.send_game_state()) 
 
             if self.opponentReady == 1 and self.selfReady == 1:
                 print("both ready")
@@ -124,9 +125,6 @@ class Game:
                         self.player.move(1)
 
             tempx = tempy = 0
-            # Send Network Stuff
-            self.opponentReady, self.opponentWon, tempx, tempy = self.parse_game_state(self.send_game_state())
-            self.opponent.update_pos(tempx, tempy)
 
             # generate obstacles
             if self.obstacles.get_obstacles()[-1].get_pos()[0] < 300:
@@ -144,15 +142,27 @@ class Game:
             if self.check_for_collision() == 1:
                 print("You collided with obstacle")
                 # tell opponennt we lost
-                self.game_winner = 2
-                break
+                self.player1Lost = 1
 
             # check if first obstacle is out of bounds
             self.obstacles.delete_out_of_bounds()
             
+            # Send Network Stuff
+            self.opponentReady, self.player2Lost, tempx, tempy = self.parse_game_state(self.send_game_state())
+            self.opponent.update_pos(tempx, tempy)
+
+            if self.player1Lost == 1:
+                self.lose_screen()
+                break
+            
+            if self.player2Lost == 1:
+                self.win_screen()
+                break
+
             self.player.draw(self.canvas.get_canvas())
             self.opponent.draw(self.canvas.get_canvas())
             self.canvas.update()
+        
         pygame.quit()
         
     def check_for_collision(self):
@@ -182,7 +192,7 @@ class Game:
         Send position to server
         :return: None
         """
-        data = str(self.net.id) + "," + str(self.selfReady) + "-" + str(self.opponentWon) + ":" + str(self.player.x) + "," + str(self.player.y)
+        data = str(self.net.id) + "," + str(self.selfReady) + "-" + str(self.player1Lost) + ":" + str(self.player.x) + "," + str(self.player.y)
         reply = self.net.send(data)
         return reply
 
