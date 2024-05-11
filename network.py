@@ -2,7 +2,6 @@ import socket
 
 
 class Network:
-
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = "192.168.56.1" # For this to work on your machine this must be equal to the ipv4 address of the machine running the server

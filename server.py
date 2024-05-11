@@ -19,6 +19,8 @@ except socket.error as e:
 s.listen(2)
 print("Waiting for a connection")
 
+random.seed(random.randint(0, 10))
+
 currentId = "0"
 # "id, readyState-opponentWon[0/1],   : x, y"
 # initial values

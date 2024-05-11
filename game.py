@@ -1,11 +1,12 @@
 import random
 import pygame
+
 pygame.init()
+
+
 from network import Network
 from player import Player
-from obstacles import ObstacleList
-
-random.seed(10)      
+from obstacles import ObstacleList      
 
 class Game:
 
