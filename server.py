@@ -19,12 +19,12 @@ except socket.error as e:
 s.listen(2)
 print("Waiting for a connection")
 
-random.seed(random.randint(0, 10))
+seed = random.randint(1, 100)
 
 currentId = "0"
-# "id, readyState-opponentWon[0/1],   : x, y"
+# "id, readyState - opponentWon[0/1], seed, : x, y"
 # initial values
-pos = ["0,0-0:10,10", "0,0-0:10,10"]
+pos = ["0,0,0," + str(seed) + ":10,10", "0,0,0,"+ str(seed) + ":10,10"]
 def threaded_client(conn):
     global currentId, pos
     conn.send(str.encode(currentId))

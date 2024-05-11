@@ -3,7 +3,6 @@ import pygame
 
 pygame.init()
 
-
 from network import Network
 from player import Player
 from obstacles import ObstacleList      
@@ -75,7 +74,7 @@ class Game:
                 self.canvas.draw_text("waiting for opponent...", 20, self.width/2 - 100, self.height/2)
                                 
             # send network stuff
-            self.opponentReady, self.player2Lost, x, y = self.parse_game_state(self.send_game_state()) 
+            self.opponentReady, self.player2Lost, self.seed, x, y = self.parse_game_state(self.send_game_state()) 
 
             if self.opponentReady == 1 and self.selfReady == 1:
                 print("both ready")
@@ -83,7 +82,10 @@ class Game:
 
             # update canvas  
             self.canvas.update()
+        random.seed(self.seed)
+        print("seed: " + str(self.seed))
         print("returning to run()")
+
         return
 
     def run(self):
@@ -107,7 +109,6 @@ class Game:
             keys = pygame.key.get_pressed()
 
             if keys[pygame.K_UP]:
-                print("pressed up")
                 if self.player.y >= self.player.velocity:
                     if self.playerId == 0 and self.player.y >= 10 + self.player.velocity:
                         self.player.move(0)
@@ -115,7 +116,6 @@ class Game:
                         self.player.move(0)
 
             if keys[pygame.K_DOWN]:
-                print("pressed down")
                 if self.player.y <= (self.height - 40) - self.player.velocity:
                     if self.playerId == 0 and self.player.y <= self.height//2 - 40 - 10 - self.player.velocity:
                         self.player.move(1)
@@ -152,7 +152,7 @@ class Game:
             self.obstacles.delete_out_of_bounds()
             
             # Send Network Stuff
-            self.opponentReady, self.player2Lost, tempx, tempy = self.parse_game_state(self.send_game_state())
+            self.opponentReady, self.player2Lost, self.seed, tempx, tempy = self.parse_game_state(self.send_game_state())
             self.opponent.update_pos(tempx, tempy)
 
             if self.player1Lost == 1:
@@ -196,19 +196,23 @@ class Game:
         Send position to server
         :return: None
         """
-        data = str(self.net.id) + "," + str(self.selfReady) + "-" + str(self.player1Lost) + ":" + str(self.player.x) + "," + str(self.player.y)
+        data = str(self.net.id) + "," + str(self.selfReady) + "," + str(self.player1Lost) + "," + str(self.seed) + ":" + str(self.player.x) + "," + str(self.player.y)
         reply = self.net.send(data)
         return reply
 
     @staticmethod
     def parse_game_state(data):
         if data:
+            # "id, ready-opponentState[0/1], seed, : x, y"
             pos = data.split(":")[1].split(",")
-            ready = data.split(":")[0].split(",")[1].split("-")
-            return int(ready[0]), int(ready[1]), int(pos[0]), int(pos[1])
+            idReadyStateSeed = data.split(":")[0].split(",")
+            ready = idReadyStateSeed[1]
+            state = idReadyStateSeed[2]
+            seed = idReadyStateSeed[3]
+            return int(ready), int(state), int(seed), int(pos[0]), int(pos[1])
         else:   
             print("failed to parse data")
-            return 0,0,0 
+            return 0,0,0,0,0 
         
     def win_screen(self):
         print("running win_screen()")
