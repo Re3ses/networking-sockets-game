@@ -4,59 +4,10 @@ import pygame
 pygame.init()
 import sys
 from network import Network
+from player import Player
+from obstacles import ObstacleList
 
-
-class Player():
-    width = height = 40
-
-    def __init__(self, startx=10, starty=10, color=(0,0,255), id=0):
-        self.id = id
-        self.x = startx
-        self.y = starty if id == 0 else 300 + 10
-        self.velocity = 2
-        self.color = color if id == 0 else (255,0,0)
-
-    def draw(self, g):
-        pygame.draw.rect(g, self.color ,(self.x, self.y, self.width, self.height), 0)
-
-    def move(self, dirn):
-        """
-        :param dirn: 0 or 1 (up, down)
-        :return: None
-        """
-        if dirn == 0:
-            self.y -= self.velocity
-        else:
-            self.y += self.velocity
-
-class Obstacle():
-    width = height = 20
-
-    def __init__(self, startx, starty, distance_to_next=700, color=(0,0,0)):
-        self.x = startx + distance_to_next
-        self.y = starty
-        self.velocity = 2
-        self.color = color
-
-    def draw(self, surface):
-        pygame.draw.rect(surface, self.color ,(self.x, self.y, self.width, self.height), 0)
-
-    def move(self):
-        # start moving to the right
-        self.x -= self.velocity
-
-# class ObstacleList():
-
-#     def __init__(self, seed, difficulty=1):
-#         self.obstacles = [] 
-#         for i in range(difficulty):
-#             self.obstacles.append(Obstacle)
-
-#     def draw_obstacles(self, screen):
-#         for obs in self.obstacles:
-#             obs.draw(screen)
-            
-
+random.seed(10)      
 
 class Game:
 
@@ -65,36 +16,31 @@ class Game:
         self.obstacleCount = 5
         self.seed = 0
         self.playerId = int(self.net.id)
-        self.playerReady = 0
+        self.selfReady = 0
         self.opponentReady = 0
+        self.player1Lost = 0
+        self.player2Lost = 0
         self.width = w
         self.height = h
         if (int(self.net.id) == 0):
             self.player = Player(id=self.playerId) # Player 1 is blue
-            self.player2 = Player(id=1-self.playerId) # Player 2 is red
+            self.opponent = Player(id=1-self.playerId) # Player 2 is red
         else:
             self.player = Player(id=self.playerId) # Player 1 is blue
-            self.player2 = Player(id=1-self.playerId) # Player 2 is red 
+            self.opponent = Player(id=1-self.playerId) # Player 2 is red 
         
-        self.obstacles = []
-        for i in range(self.obstacleCount):
-            random.seed(i)
-            y = random.randint(10, (self.height // 2) - 10 )
-            x = random.randint(10, self.width)
-            # print("rand y: " + y)
-            self.obstacles.append(Obstacle(700, y, x))
-
         self.canvas = Canvas(self.width, self.height, "You are " + ("blue" if self.playerId == 0 else "red") )
+        self.obstacles = ObstacleList(self.canvas.get_canvas(), self.width, self.height)
 
     def start_screen(self):
+        print("running start_screen()")
         buttonW, buttonH = 100, 50
         run = True
 
         clock = pygame.time.Clock()
+        print("player ready: " + str(self.selfReady) + " opponent ready: " + str(self.opponentReady))
         while run:
-            print("running start_screen()")
             clock.tick(60)
-            print("player ready: " + str(self.playerReady) + " opponent ready: " + str(self.opponentReady))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -103,8 +49,8 @@ class Game:
                 # check if button is pressed    
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if self.width/2 <= mouse[0] <= self.width/2+buttonW and self.height/2 <= mouse[1] <= self.height/2+buttonH: 
-                        self.playerReady = 1
-                        print(self.playerReady)
+                        self.selfReady = 1
+                        print(self.selfReady)
                         
             # get mouse position
             mouse = pygame.mouse.get_pos()
@@ -116,7 +62,7 @@ class Game:
             self.canvas.draw_text(str(mouse), 10, 0, 0)
 
             # check if player is ready
-            if self.playerReady == 0:
+            if self.selfReady == 0:
                 # check if player is hovering on the button, if so change color
                 if self.width/2 <= mouse[0] <= self.width/2+buttonW and self.height/2 <= mouse[1] <= self.height/2+buttonH: 
                     pygame.draw.rect(self.canvas.get_canvas(), (170, 170, 170), [self.width/2, self.height/2, buttonW, buttonH], 0) 
@@ -124,15 +70,16 @@ class Game:
                     pygame.draw.rect(self.canvas.get_canvas(), (100, 100, 100), [self.width/2, self.height/2, buttonW, buttonH], 0) 
                 self.canvas.draw_text("start", 35, self.width/2 + 10, self.height/2)
             else:
+                print("player ready")
                 # remove button and darken background
                 self.canvas.draw_background((200, 200, 200))
                 # display waiting for opponent
                 self.canvas.draw_text("waiting for opponent...", 20, self.width/2 - 100, self.height/2)
                                 
             # send network stuff
-            self.opponentReady, x, y = self.parse_data(self.send_data(), self.playerId) 
+            self.opponentReady, self.player2Lost, x, y = self.parse_game_state(self.send_game_state()) 
 
-            if self.opponentReady == 1 and self.playerReady == 1:
+            if self.opponentReady == 1 and self.selfReady == 1:
                 print("both ready")
                 run = False
 
@@ -141,8 +88,8 @@ class Game:
         print("returning to run()")
         return
 
-
     def run(self):
+        print("running run()")
         clock = pygame.time.Clock()
         start = False
 
@@ -151,9 +98,7 @@ class Game:
             start = True
 
         while start:
-            print("running run()")
             clock.tick(60)
-            print(len(self.obstacles))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     start = False
@@ -163,8 +108,8 @@ class Game:
 
             keys = pygame.key.get_pressed()
 
-
             if keys[pygame.K_UP]:
+                print("pressed up")
                 if self.player.y >= self.player.velocity:
                     if self.playerId == 0 and self.player.y >= 10 + self.player.velocity:
                         self.player.move(0)
@@ -172,49 +117,124 @@ class Game:
                         self.player.move(0)
 
             if keys[pygame.K_DOWN]:
+                print("pressed down")
                 if self.player.y <= (self.height - 40) - self.player.velocity:
                     if self.playerId == 0 and self.player.y <= self.height//2 - 40 - 10 - self.player.velocity:
                         self.player.move(1)
                     elif self.playerId == 1 and self.player.y <= 600 - 40 - 10 - self.player.velocity:
                         self.player.move(1)
 
-            # Send Network Stuff
-            self.opponentReady, self.player2.x, self.player2.y = self.parse_data(self.send_data(), self.playerId)
+            tempx = tempy = 0
 
+            # generate obstacles
+            if self.obstacles.get_obstacles()[-1].get_pos()[0] < 300:
+                self.obstacles.generate_obstacle()
+            
             # Update Canvas
             self.canvas.draw_background()
             # Draw line
             self.canvas.draw_line()
 
-            for i in range(self.obstacleCount):
-                # draw
-                self.obstacles[i].draw(self.canvas.get_canvas())
-                # move
-                self.obstacles[i].move()
+            # move obstacles
+            self.obstacles.animate_obstacles()  
+
+            # check for collision
+            if self.check_for_collision() == 1:
+                print("You collided with obstacle")
+                # tell opponennt we lost
+                self.player1Lost = 1
+
+            # check if first obstacle is out of bounds
+            self.obstacles.delete_out_of_bounds()
+            
+            # Send Network Stuff
+            self.opponentReady, self.player2Lost, tempx, tempy = self.parse_game_state(self.send_game_state())
+            self.opponent.update_pos(tempx, tempy)
+
+            if self.player1Lost == 1:
+                self.lose_screen()
+                break
+            
+            if self.player2Lost == 1:
+                self.win_screen()
+                break
 
             self.player.draw(self.canvas.get_canvas())
-            self.player2.draw(self.canvas.get_canvas())
+            self.opponent.draw(self.canvas.get_canvas())
             self.canvas.update()
+        
         pygame.quit()
+        
+    def check_for_collision(self):
+        """
+        Check for collision between players and obstacles.
+        Returns:
+            int: 1 if player 1 collides with an obstacle, 2 if player 2 collides with an obstacle, 0 otherwise.
+        """
+        # Get the obstacle rectangles
+        rects = self.obstacles.get_obstacle_rects()
+        # Get the player rectangles
+        selfRect = self.player.get_player_rect()
+        opponentRect = self.opponent.get_player_rect()
 
-    def send_data(self):
+        # Check if player 1 collides with any obstacle
+        if selfRect.collidelist(rects) > -1:
+            return 1
+        # Check if player 2 collides with any obstacle
+        elif opponentRect.collidelist(rects) > -1:
+            return 2
+        # No collision
+        else:
+            return 0
+
+    def send_game_state(self):
         """
         Send position to server
         :return: None
         """
-        data = str(self.net.id) + "," + str(self.playerReady) + "-" + str(self.seed) + ":" + str(self.player.x) + "," + str(self.player.y)
+        data = str(self.net.id) + "," + str(self.selfReady) + "-" + str(self.player1Lost) + ":" + str(self.player.x) + "," + str(self.player.y)
         reply = self.net.send(data)
         return reply
 
     @staticmethod
-    def parse_data(data, id):
+    def parse_game_state(data):
         if data:
             pos = data.split(":")[1].split(",")
             ready = data.split(":")[0].split(",")[1].split("-")
-            return int(ready[0]), int(pos[0]), int(pos[1])
+            return int(ready[0]), int(ready[1]), int(pos[0]), int(pos[1])
         else:   
             print("failed to parse data")
             return 0,0,0 
+        
+    def win_screen(self):
+        print("running win_screen()")
+        run = True
+        clock = pygame.time.Clock()
+        while run:
+            clock.tick(60)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+
+            self.canvas.draw_background()
+            self.canvas.draw_text("You Win!", 50, self.width//2 - 50, self.height//2)
+            self.canvas.update()
+        pygame.quit()
+
+    def lose_screen(self):
+        print("running lose_screen()")
+        run = True
+        clock = pygame.time.Clock()
+        while run:
+            clock.tick(60)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+
+            self.canvas.draw_background()
+            self.canvas.draw_text("You Lose!", 50, self.width//2 - 50, self.height//2)
+            self.canvas.update()
+        pygame.quit()
 
 
 class Canvas:

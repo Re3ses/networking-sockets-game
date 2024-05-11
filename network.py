@@ -22,7 +22,7 @@ class Network:
         :return: str
         """
         try:
-            self.client.send(str.encode(data))
+            self.client.sendall(str.encode(data))
             reply = self.client.recv(2048).decode()
             return reply
         except socket.error as e:
