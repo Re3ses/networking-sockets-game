@@ -1,5 +1,5 @@
 import socket
-
+import random
 
 class Network:
     def __init__(self):
@@ -9,7 +9,10 @@ class Network:
                                     # ipv4 address. This feild will be the same for all your clients.
         self.port = 5555
         self.addr = (self.host, self.port)
-        self.id = self.connect()
+        self.idAndSeed = self.connect().split(",")
+        self.id = self.idAndSeed[0]
+        self.seed = self.idAndSeed[1]
+        random.seed(self.seed)
 
     def connect(self):
         self.client.connect(self.addr)

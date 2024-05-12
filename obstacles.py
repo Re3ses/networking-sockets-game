@@ -39,6 +39,8 @@ class Obstacle():
         """
         pygame.draw.rect(surface, self.color , self.rect1)
         pygame.draw.rect(surface, self.color , self.rect2)
+        # line for tracing obs position
+        # pygame.draw.line(surface, (0,0,0), (0, self.y), (self.x, self.y))
 
     def increase_vel(self):
         self.velocity += .5
@@ -62,7 +64,6 @@ class ObstacleList():
 
     def get_obstacles_count(self):
         return len(self.obstacles)
-
 
     def generate_obstacle(self):
         y = random.randint(10, ((self.height // 2) - 20) )

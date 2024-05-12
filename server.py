@@ -21,14 +21,14 @@ print("Waiting for a connection")
 
 seed = random.randint(1, 100)
 
-currentId = "0"
+currentIdandSeed = "0," + str(seed)
 # "id, readyState - opponentWon[0/1], seed, : x, y"
 # initial values
 pos = ["0,0,0," + str(seed) + ":10,10", "0,0,0,"+ str(seed) + ":10,10"]
 def threaded_client(conn):
-    global currentId, pos
-    conn.send(str.encode(currentId))
-    currentId = "1"
+    global currentIdandSeed, pos
+    conn.send(str.encode(currentIdandSeed))
+    currentIdandSeed = "1,"+ str(seed)
     reply = ''
     gameStart = True
     while gameStart:

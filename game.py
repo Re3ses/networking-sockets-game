@@ -89,6 +89,7 @@ class Game:
         return
 
     def run(self):
+        random.seed(self.seed)
         print("running run()")
         clock = pygame.time.Clock()
         start = False
