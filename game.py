@@ -11,7 +11,6 @@ class Game:
 
     def __init__(self, w, h):
         self.net = Network()
-        self.seed = 0
         self.playerId = int(self.net.id)
         self.selfReady = 0
         self.opponentReady = 0
@@ -74,7 +73,7 @@ class Game:
                 self.canvas.draw_text("waiting for opponent...", 20, self.width/2 - 100, self.height/2)
                                 
             # send network stuff
-            self.opponentReady, self.player2Lost, self.seed, x, y = self.parse_game_state(self.send_game_state()) 
+            self.opponentReady, self.player2Lost, x, y = self.parse_game_state(self.send_game_state()) 
 
             if self.opponentReady == 1 and self.selfReady == 1:
                 print("both ready")
@@ -82,14 +81,11 @@ class Game:
 
             # update canvas  
             self.canvas.update()
-        random.seed(self.seed)
-        print("seed: " + str(self.seed))
         print("returning to run()")
 
         return
 
     def run(self):
-        random.seed(self.seed)
         print("running run()")
         clock = pygame.time.Clock()
         start = False
@@ -153,7 +149,7 @@ class Game:
             self.obstacles.delete_out_of_bounds()
             
             # Send Network Stuff
-            self.opponentReady, self.player2Lost, self.seed, tempx, tempy = self.parse_game_state(self.send_game_state())
+            self.opponentReady, self.player2Lost, tempx, tempy = self.parse_game_state(self.send_game_state())
             self.opponent.update_pos(tempx, tempy)
 
             if self.player1Lost == 1:
@@ -197,7 +193,7 @@ class Game:
         Send position to server
         :return: None
         """
-        data = str(self.net.id) + "," + str(self.selfReady) + "," + str(self.player1Lost) + "," + str(self.seed) + ":" + str(self.player.x) + "," + str(self.player.y)
+        data = str(self.net.id) + "," + str(self.selfReady) + "," + str(self.player1Lost) + ":" + str(self.player.x) + "," + str(self.player.y)
         reply = self.net.send(data)
         return reply
 
@@ -209,11 +205,10 @@ class Game:
             idReadyStateSeed = data.split(":")[0].split(",")
             ready = idReadyStateSeed[1]
             state = idReadyStateSeed[2]
-            seed = idReadyStateSeed[3]
-            return int(ready), int(state), int(seed), int(pos[0]), int(pos[1])
+            return int(ready), int(state), int(pos[0]), int(pos[1])
         else:   
             print("failed to parse data")
-            return 0,0,0,0,0 
+            return 0,0,0,0 
         
     def win_screen(self):
         print("running win_screen()")
